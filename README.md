@@ -5,7 +5,7 @@
 [![Tests](https://github.com/datasette/datasette-enrichments-quickjs/actions/workflows/test.yml/badge.svg)](https://github.com/datasette/datasette-enrichments-quickjs/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/datasette/datasette-enrichments-quickjs/blob/main/LICENSE)
 
-Enrich data with a custom JavaScript function
+[Datasette enrichment](https://github.com/simonw/datasette-enrichments) for enriching data with a custom JavaScript function
 
 ## Installation
 
@@ -15,7 +15,17 @@ datasette install datasette-enrichments-quickjs
 ```
 ## Usage
 
-Usage instructions go here.
+This enrichment allows you to select rows from a table and specify a custom JavaScript function to use to generate a value for each of those rows, storing that value in a specified column and creating that column if it does not exist.
+
+Code runs in a [QuickJS sandbox](https://github.com/PetterS/quickjs) with a 0.1s time limit for the execution of each function.
+
+Enrichment JavaScript functions look like this:
+
+```javascript
+function enrich(row) {
+    return row["title"] + "!";
+}
+```
 
 ## Development
 
