@@ -84,11 +84,7 @@ class QuickJsEnrichment(Enrichment):
         function.set_memory_limit(4 * 1024 * 1024)  # 4MB
         output_column = config["output_column"]
         for row in rows:
-            try:
-                output = function(row)
-            except Exception as ex:
-                print(ex, repr(ex))
-                raise
+            output = function(row)
             await db.execute_write(
                 "update [{table}] set [{output_column}] = ? where {wheres}".format(
                     table=table,
