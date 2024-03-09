@@ -17,7 +17,7 @@ datasette install datasette-enrichments-quickjs
 
 This enrichment allows you to select rows from a table and specify a custom JavaScript function to use to generate a value for each of those rows, storing that value in a specified column and creating that column if it does not exist.
 
-Code runs in a [QuickJS sandbox](https://github.com/PetterS/quickjs) with a 0.1s time limit for the execution of each function.
+Code runs in a [QuickJS sandbox](https://github.com/PetterS/quickjs) with a 0.1s time limit for the execution of each function and a 4MB memory limit.
 
 Enrichment JavaScript functions look like this:
 

@@ -27,7 +27,7 @@ CI = "https://github.com/datasette/datasette-enrichments-quickjs/actions"
 enrichments_quickjs = "datasette_enrichments_quickjs"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-asyncio"]
+test = ["pytest", "pytest-asyncio", "pytest-timeout"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
