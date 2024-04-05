@@ -1,6 +1,6 @@
 [project]
 name = "datasette-enrichments-quickjs"
-version = "0.1a1"
+version = "0.1a2"
 description = "Enrich data with a custom JavaScript function"
 readme = "README.md"
 authors = [{name = "Simon Willison"}]
