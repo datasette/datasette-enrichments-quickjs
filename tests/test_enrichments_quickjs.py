@@ -1,5 +1,6 @@
 import asyncio
 from datasette.app import Datasette
+import json
 import pytest
 import sqlite_utils
 
@@ -28,6 +29,7 @@ async def test_enrichment(tmpdir):
     cookies = await _cookies(datasette)
     post = {
         "javascript": "function enrich(row) { return row.description.length }",
+        "mode": "single",
         "output_column": "description_length",
         "output_column_type": "integer",
     }
@@ -60,6 +62,72 @@ async def test_enrichment(tmpdir):
             "name": "Three",
             "description": "Third item",
             "description_length": 10,
+        },
+    ]
+
+
+@pytest.mark.asyncio
+async def test_enrichment_multi(tmpdir):
+    data = str(tmpdir / "data.db")
+    datasette = Datasette([data], memory=True)
+    db = sqlite_utils.Database(data)
+    rows = [
+        {
+            "id": 1,
+            "name": "NYC",
+            "point": "40.71,-74.0",
+        },
+        {
+            "id": 2,
+            "name": "SF",
+            "point": "37.77,-122.41",
+        },
+    ]
+    db["items"].insert_all(rows, pk="id")
+
+    cookies = await _cookies(datasette)
+    post = {
+        "javascript": """
+            function enrich(row) {
+                const bits = row.point.split(",");
+                return {
+                    "latitude": parseFloat(bits[0]),
+                    "longitude": parseFloat(bits[1])
+                }
+            }
+        """,
+        "mode": "multi",
+    }
+    post["csrftoken"] = cookies["ds_csrftoken"]
+    response = await datasette.client.post(
+        "/-/enrich/data/items/quickjs",
+        data=post,
+        cookies=cookies,
+    )
+    assert response.status_code == 302
+    await asyncio.sleep(0.3)
+    db = datasette.get_database("data")
+    jobs = await db.execute("select * from _enrichment_jobs")
+    job = dict(jobs.first())
+    assert job["status"] == "finished"
+    assert job["enrichment"] == "quickjs"
+    assert job["done_count"] == 2
+    results = await db.execute("select * from items order by id")
+    rows = [dict(r) for r in results.rows]
+    assert rows == [
+        {
+            "id": 1,
+            "name": "NYC",
+            "point": "40.71,-74.0",
+            "latitude": 40.71,
+            "longitude": -74.0,
+        },
+        {
+            "id": 2,
+            "name": "SF",
+            "point": "37.77,-122.41",
+            "latitude": 37.77,
+            "longitude": -122.41,
         },
     ]
 
@@ -124,6 +192,7 @@ async def test_time_and_memory_limit(javascript, expected_error):
     ]
     post = {
         "javascript": javascript,
+        "mode": "single",
         "output_column": "description_length",
         "output_column_type": "integer",
     }

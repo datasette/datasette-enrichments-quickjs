@@ -1,5 +1,6 @@
 from datasette_enrichments import Enrichment
 from datasette import hookimpl
+import json
 import markupsafe
 from quickjs import Function
 import sqlite_utils
@@ -19,6 +20,9 @@ class QuickJsEnrichment(Enrichment):
 
     async def initialize(self, datasette, db, table, config):
         # Ensure column exists
+        if config["mode"] == "multi":
+            # No need to create columns for multi mode
+            return
         output_column = config["output_column"]
         column_type = config["output_column_type"].upper()
 
@@ -44,6 +48,17 @@ class QuickJsEnrichment(Enrichment):
                 ),
                 validators=[DataRequired(message="JavaScript function is required.")],
                 default='function enrich(row) {\n  return JSON.stringify(row) + " enriched";\n}',
+            )
+            mode = SelectField(
+                "Output mode",
+                choices=[
+                    ("single", "Store the function result in a single column"),
+                    (
+                        "multi",
+                        "Return an object and store each key in a separate column",
+                    ),
+                ],
+                validators=[DataRequired(message="A mode is required.")],
             )
             output_column = StringField(
                 "Output column name",
@@ -85,11 +100,29 @@ class QuickJsEnrichment(Enrichment):
         output_column = config["output_column"]
         for row in rows:
             output = function(row)
-            await db.execute_write(
-                "update [{table}] set [{output_column}] = ? where {wheres}".format(
-                    table=table,
-                    output_column=output_column,
-                    wheres=" and ".join('"{}" = ?'.format(pk) for pk in pks),
-                ),
-                [output] + list(row[pk] for pk in pks),
-            )
+            if config["mode"] == "multi":
+                if isinstance(output, str) and not isinstance(output, dict):
+                    try:
+                        output = json.loads(output)
+                    except json.JSONDecodeError:
+                        output = {"javascript_output": output}
+                if len(pks) == 1:
+                    pk_value = row[pks[0]]
+                else:
+                    pk_value = (row[pk] for pk in pks)
+
+                def _update(conn):
+                    sqlite_utils.Database(conn)[table].update(
+                        pk_value, output, alter=True
+                    )
+
+                await db.execute_write_fn(_update)
+            else:
+                await db.execute_write(
+                    "update [{table}] set [{output_column}] = ? where {wheres}".format(
+                        table=table,
+                        output_column=output_column,
+                        wheres=" and ".join('"{}" = ?'.format(pk) for pk in pks),
+                    ),
+                    [output] + list(row[pk] for pk in pks),
+                )

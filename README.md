@@ -26,6 +26,22 @@ function enrich(row) {
     return row["title"] + "!";
 }
 ```
+The return value of your function will be stored in the output column of your choice.
+
+Instead of picking an output column, you can have your function return an object with keys and values.
+
+This example takes a `point` column with values like `37.7749,-122.4194 and splits it into `latitude` and `longitude` columns:
+
+```javascript
+function enrich(row) {
+    const bits = row.point.split(",");
+    return {
+        "latitude": parseFloat(bits[0]),
+        "longitude": parseFloat(bits[1])
+    }
+}
+```
+The enrichment will then create new columns in the table for each key in the object returned by that function.
 
 ## Development
 

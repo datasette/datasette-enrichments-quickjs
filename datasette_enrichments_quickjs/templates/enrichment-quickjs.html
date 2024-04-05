@@ -1,0 +1,27 @@
+{% extends "enrichment.html" %}
+
+{% block below_form %}
+<script>
+const modeSelect = document.querySelector('#mode');
+const outputColumn = document.querySelector('#output_column').closest('.field');
+const outputColumnLabel = document.querySelector('label[for=output_column]').closest('div');
+const outputColumnType = document.querySelector('#output_column_type').closest('.field');
+const outputColumnTypeLabel = document.querySelector('label[for=output_column_type]').closest('div');
+function handleModeChange() {
+    // If multi, hide those fields
+    if (modeSelect.value === 'multi') {
+        outputColumn.style.display = 'none';
+        outputColumnType.style.display = 'none';
+        outputColumnLabel.style.display = 'none';
+        outputColumnTypeLabel.style.display = 'none';
+    } else {
+        outputColumn.style.display = '';
+        outputColumnType.style.display = '';
+        outputColumnLabel.style.display = '';
+        outputColumnTypeLabel.style.display = '';
+    }
+}
+modeSelect.addEventListener('change', handleModeChange);
+handleModeChange();
+</script>
+{% endblock %}
